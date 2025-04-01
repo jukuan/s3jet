@@ -17,12 +17,10 @@ function assertPathExists(filePath) {
     }
 }
 
-// Validate environment variables
 if (!process.env.S3_ACCESS_KEY || !process.env.S3_SECRET_KEY || !process.env.S3_ENDPOINT) {
     exitWithError('Missing required S3 credentials or endpoint in .env file');
 }
 
-// Configure S3 Client
 const s3 = new AWS.S3({
     accessKeyId: process.env.S3_ACCESS_KEY,
     secretAccessKey: process.env.S3_SECRET_KEY,
@@ -33,8 +31,8 @@ const s3 = new AWS.S3({
 
 async function uploadFileToS3(filePath, bucketName, keyName) {
     const fileStream = fs.createReadStream(filePath);
-    const mime = await import('mime');
-    const contentType = mime.default.getType(filePath) || 'application/octet-stream';
+    const mime = require('mime');
+    const contentType = mime.getType(filePath) || 'application/octet-stream';
 
     try {
         const result = await s3.upload({
@@ -63,7 +61,7 @@ async function uploadDirTos3(dirPath, bucketName) {
 
 // Parse CLI arguments
 const argv = yargs
-    .usage('Usage: $0 [--file <filePath> | --dir <dirPath>] --bucket <bucketName> [--key <keyName>]')
+    .usage('Usage: $0 [--file <filePath> | --dir <dirPath>] [--bucket <bucketName>] [--key <keyName>]')
     .option('file', {
         alias: 'f',
         describe: 'Path to the file to upload',
@@ -77,7 +75,6 @@ const argv = yargs
     .option('bucket', {
         alias: 'b',
         describe: 'S3 bucket name',
-        demandOption: true,
         type: 'string',
     })
     .option('key', {
@@ -89,11 +86,10 @@ const argv = yargs
     .argv;
 
 (async () => {
-    const bucketName = argv.bucket || process.env.S3_SECRET_KEY;
+    let bucketName = argv.bucket || process.env.S3_SECRET_KEY;
 
     if (argv.file) {
         const filePath = path.resolve(argv.file);
-
         const keyName = argv.key || path.basename(filePath);
         assertPathExists(filePath);
 
